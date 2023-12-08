@@ -31,16 +31,14 @@ public class Day08 {
 
 	public static int getCount(String instructions, Node node, boolean part2) {
 		int count = 0;
-		boolean found = false;
 		
-		while (!found) {
+		while (true) {
 			for (char direction : instructions.toCharArray()) {
-				if (part2 ? node.name.endsWith("Z") : node.name.equals("ZZZ")) { found = true; break; }
+				if (part2 ? node.name.endsWith("Z") : node.name.equals("ZZZ")) { return count; }
 				node = (direction == 'R') ? node.right : node.left;
 				count++;
 			}
 		}
-		return count;
 	}
 	
 	public static void main(String[] args) throws IOException {
