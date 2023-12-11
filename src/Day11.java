@@ -3,12 +3,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class Day11 {
 	
 	public static void main(String[] args) throws IOException {
 		List<String> lines = Files.readAllLines(Path.of("input_day11.txt"));
 
+		// BUild map
 		int width = lines.get(0).length();
 		int height = lines.size();
 
@@ -22,30 +24,30 @@ public class Day11 {
 		}
 		
 		// Part 1
-		long[] colDx = new long[width];
-		long[] rowDy = new long[height];
-		
-		long result = fillDxDy(width, height, map, colDx, rowDy, 1);
+		long result = computeSumOfDistances(width, height, map, 1);
 		System.out.println("Result part 1 : " + result);
 
 		// Part 2
-		result = fillDxDy(width, height, map, colDx, rowDy, 999999);
+		result = computeSumOfDistances(width, height, map, 999999);
 		System.out.println("Result part 2 : " + result);
 	}
 
-	private static long fillDxDy(int width, int height, char[][] map, long[] colDx, long[] rowDy, int increment) {
-		int y;
+	private static long computeSumOfDistances(int width, int height, char[][] map, int increment) {
+
 		long dx = 0;
 		long dy = 0;
 
+		long[] colDx = new long[width];
+		long[] rowDy = new long[height];
+		
 		for (int x = 0;x<width;x++) {
 			boolean empty = true;
-			for (y=0;y<height;y++) { if (map[x][y] != '.') empty = false; }
+			for (int y=0;y<height;y++) { if (map[x][y] != '.') empty = false; }
 			if (empty) dx+= increment;
 			colDx[x] = dx;
 		}
 
-		for (y = 0;y<height;y++) {
+		for (int y = 0;y<height;y++) {
 			boolean empty = true;
 			for (int x=0;x<width;x++) { if (map[x][y] != '.') empty = false; }
 			if (empty) dy+= increment;
@@ -53,7 +55,7 @@ public class Day11 {
 		}
 		
 		List<Galaxy> galaxies = new ArrayList<Galaxy>();
-		for (y=0;y<height;y++) {
+		for (int y=0;y<height;y++) {
 			for (int x=0;x<width;x++) {
 				if (map[x][y] != '.') {
 					galaxies.add(new Galaxy(x+colDx[x], y+rowDy[y]));
