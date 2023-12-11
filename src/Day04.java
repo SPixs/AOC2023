@@ -20,14 +20,10 @@ public class Day04 {
 			String[] allNumbers = line.split(":")[1].split("\\|");
 			Set<Integer> winningNumbers = Arrays.stream(allNumbers[0].trim().split(" ")).filter(s -> !s.isEmpty()).map(Integer::parseInt).collect(Collectors.toSet());
 			Set<Integer> numbers = Arrays.stream(allNumbers[1].trim().split(" ")).filter(s -> !s.isEmpty()).map(Integer::parseInt).collect(Collectors.toSet());
-			int point = 0;
-			int score = 0;
-			for (int number : numbers) {
-				if (winningNumbers.contains(number)) { 
-					point = point == 0 ? 1 : point << 1; 
-					score++;
-				}
-			}
+			
+			int score = (int) numbers.stream().filter(winningNumbers::contains).count();
+			int point = (1 << score) >> 1;
+
 			originalCards.add(new Card(cardIndex++, score));
 			result += point;
 		}
