@@ -63,13 +63,11 @@ public class Day11 {
 			}			
 		}
 		
-		long result = 0;
-		for (int i=0;i<galaxies.size();i++) {
-			for (int j=i+1;j<galaxies.size();j++) {
-				result += galaxies.get(i).getDistance(galaxies.get(j));
-			}
-		}
-		return result;
+		return IntStream.range(0, galaxies.size())
+				.mapToLong(src -> IntStream.range(src, galaxies.size())
+						.mapToLong(dest -> galaxies.get(src).getDistance(galaxies.get(dest)))
+						.sum())
+				.sum();
 	}
 
 	public static class Galaxy {
