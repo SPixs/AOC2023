@@ -1,14 +1,13 @@
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntFunction;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class Day12 {
 	
@@ -16,24 +15,21 @@ public class Day12 {
 		List<String> lines = Files.readAllLines(Path.of("input_day12.txt"));
 
 		// Part 1
-		long result = 0;
+		BigInteger result = BigInteger.ZERO;
 		for (String line : lines) {
 			char[] springs = line.split(" ")[0].toCharArray();
 			int[] damagedGroups = Arrays.stream(line.split(" ")[1].split(",")).mapToInt(Integer::parseInt).toArray();
-			result += countArrangement(springs, damagedGroups); 
+			result = result.add(countArrangement(springs, damagedGroups)); 
 		}
 		
 		System.out.println("Result part 1 : " + result);
 		
 		// Part 2
-		result = lines.stream().mapToLong(line -> countArrangements(line)).sum();
-//		result = lines.parallelStream().mapToLong(line -> countArrangements(line)).sum();
+		result = lines.parallelStream().map(line -> countArrangements(line)).reduce(BigInteger.ZERO, (a,b) -> BigInteger.ZERO.add(a).add(b));
 		System.out.println("Result part 2 : " + result);
 	}
 	
-	static AtomicInteger processed = new AtomicInteger();
-
-	private static int countArrangements(String line) {
+	private static BigInteger countArrangements(String line) {
 		char[] springs = line.split(" ")[0].toCharArray();
 		// 5 copies
 		char[] extendedSprings = new char[4+springs.length*5];
@@ -48,63 +44,75 @@ public class Day12 {
 			System.arraycopy(damagedGroups, 0, extendeddDamagedGroups, i*(damagedGroups.length), damagedGroups.length);
 		}
 		
-		int arrangements = countArrangement(extendedSprings, extendeddDamagedGroups);
-		System.out.println(processed.incrementAndGet() + " " + arrangements);
+		BigInteger arrangements = countArrangement(extendedSprings, extendeddDamagedGroups);
 		return arrangements;
 	}
 	
 	
 	
-	private static int countArrangement(char[] springs, int[] damagedGroups) {
-		AtomicInteger counter = new AtomicInteger(0);
-		countArrangement(0, springs, damagedGroups, new ArrayList<Integer>(), new AtomicInteger(), counter);
-		return counter.intValue();
+	private static BigInteger countArrangement(char[] springs, int[] damagedGroups) {
+		Map<CacheKey, BigInteger> cache = new ConcurrentHashMap<CacheKey, BigInteger>();
+		return countArrangement(0, springs, damagedGroups, new ArrayList<Integer>(), new AtomicInteger(), cache);
 	}
 	
-	private static boolean countArrangement(int index, char[] springs, int[] damagedGroups, List<Integer> computedDamagedGroups, AtomicInteger damageCounter, AtomicInteger counter) {
+	
+	private static BigInteger countArrangement(int index, char[] springs, int[] damagedGroups, List<Integer> computedDamagedGroups, 
+			AtomicInteger damageCounter, Map<CacheKey, BigInteger> cache) {
 
-//		if (!check(computedDamagedGroups, damagedGroups)) return false;
+		CacheKey cacheKey = new CacheKey(index, computedDamagedGroups, damagedGroups, damageCounter.intValue());
+		BigInteger result = cache.get(cacheKey);
+		if (result != null) {
+			return result;
+		}
+		
+		if (damageCounter.get() > 0 && computedDamagedGroups.size() >= damagedGroups.length) {
+			return BigInteger.ZERO;
+		}
+		
+		if (damageCounter.get() > 0 && damageCounter.get() > damagedGroups[computedDamagedGroups.size()]) {
+			return BigInteger.ZERO;
+		}
 		
 		if (index >= springs.length) {
 			if (damageCounter.get() > 0) {
 				computedDamagedGroups.add(damageCounter.get()); 
 			}
-//			boolean valid = Arrays.equals(damagedGroups, computedDamagedGroups.stream().mapToInt(Integer::intValue).toArray());
-			boolean valid = checkEqual(computedDamagedGroups, damagedGroups);
+			boolean valid = computedDamagedGroups.size() == damagedGroups.length && computedDamagedGroups.get(computedDamagedGroups.size()-1) == damagedGroups[computedDamagedGroups.size()-1];
 			if (damageCounter.get() > 0) {
 				computedDamagedGroups.remove(computedDamagedGroups.size()-1);
 			}
-			if (valid) counter.incrementAndGet();
-			return valid;
+			return valid ? BigInteger.ONE : BigInteger.ZERO;
 		}
 		
 		char state = springs[index];
 
 		if (state == '#') { 
 			damageCounter.incrementAndGet();  
-			boolean valid = countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, counter);
+			result = countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, cache);
 			damageCounter.decrementAndGet();
-			return valid;
+			cache.put(cacheKey, result);
+			return result;
 		}
 		if (state == '.') { 
 			int damageValue = damageCounter.get();
 			boolean valid = true;
 			if (damageValue > 0) {
 				computedDamagedGroups.add(damageValue); 
-				valid = check(computedDamagedGroups, damagedGroups);
+				valid = computedDamagedGroups.size() <= damagedGroups.length && damageValue == damagedGroups[computedDamagedGroups.size()-1];
 				damageCounter.set(0); 
 			}
-			valid = valid && countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, counter);
+			result = valid ? countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, cache) : BigInteger.ZERO;
 			if (damageValue > 0) {
 				computedDamagedGroups.remove(computedDamagedGroups.size()-1);
 			}
 			damageCounter.set(damageValue);
-			return valid;
+			cache.put(cacheKey, result);
+			return result;
 		}
 		else {
 			// simulate '#'
 			damageCounter.incrementAndGet();
-			boolean valid = countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, counter);
+			result = BigInteger.ZERO.add(countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, cache));
 			damageCounter.decrementAndGet();
 			
 			// simulate '.'
@@ -112,36 +120,68 @@ public class Day12 {
 			int damageValue = damageCounter.get();
 			if (damageValue > 0) {
 				computedDamagedGroups.add(damageValue); 
-				check = check(computedDamagedGroups, damagedGroups);
+				check = computedDamagedGroups.size() <= damagedGroups.length && damageValue == damagedGroups[computedDamagedGroups.size()-1];
 				damageCounter.set(0); 
 			}
-			valid |= check && countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, counter);
+			result = check ? result.add(countArrangement(index + 1, springs, damagedGroups, computedDamagedGroups, damageCounter, cache)): result;
 			if (damageValue > 0) {
 				computedDamagedGroups.remove(computedDamagedGroups.size()-1);
 			}
 			damageCounter.set(damageValue);
-			return valid;
+			cache.put(cacheKey, result);
+			return result;
 		}
 	}
 	
-	private static boolean check(List<Integer> computedDamagedGroups, int[] damagedGroups) {
-		if (computedDamagedGroups.size() > damagedGroups.length) { return false; }
-		for (int i=0;i<computedDamagedGroups.size();i++) {
-			if (computedDamagedGroups.get(i) != damagedGroups[i]) {
-				return false;
-			}
+	private static class CacheKey {
+		
+		private int index;
+		private List<Integer> computedDamagedGroups;
+		private int[] damagedGroups;
+		private int damageCounter;
+		
+		public CacheKey(int index, List<Integer> computedDamagedGroups, int[] damagedGroups, int damageCounter) {
+			this.index = index;
+			this.computedDamagedGroups = new ArrayList<Integer>(computedDamagedGroups);
+			this.damagedGroups = damagedGroups;
+			this.damageCounter = damageCounter;
 		}
-		return true;
-	}
-	
-	private static boolean checkEqual(List<Integer> computedDamagedGroups, int[] damagedGroups) {
-		if (computedDamagedGroups.size() != damagedGroups.length) { return false; }
-		for (int i=0;i<computedDamagedGroups.size();i++) {
-			if (computedDamagedGroups.get(i) != damagedGroups[i]) {
-				return false;
-			}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((computedDamagedGroups == null) ? 0 : computedDamagedGroups.hashCode());
+			result = prime * result + damageCounter;
+			result = prime * result + Arrays.hashCode(damagedGroups);
+			result = prime * result + index;
+			return result;
 		}
-		return true;
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			CacheKey other = (CacheKey) obj;
+			if (computedDamagedGroups == null) {
+				if (other.computedDamagedGroups != null)
+					return false;
+			} else if (!computedDamagedGroups.equals(other.computedDamagedGroups))
+				return false;
+			if (damageCounter != other.damageCounter)
+				return false;
+			if (!Arrays.equals(damagedGroups, other.damagedGroups))
+				return false;
+			if (index != other.index)
+				return false;
+			return true;
+		}
+
+		
 	}
 }
 
