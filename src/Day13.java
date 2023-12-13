@@ -3,6 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Day13 {
 	
@@ -97,10 +98,12 @@ public class Day13 {
 		patterns.add(pattern);
 		
 		// Part 1
+		long startTime = System.nanoTime();
 		int result = patterns.stream().mapToInt(p -> p.getVerticalRFeflectionCount()).sum() + 100 * patterns.stream().mapToInt(p -> p.getHorizontalRFeflectionCount()).sum();
-		System.out.println("Result part 1 : " + result);
+		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 		
 		// Part 2
+		startTime = System.nanoTime();
 		int verticalReflectionCount = 0;
 		int horizontalReflectionCount = 0;
 		boolean found = false;
@@ -130,7 +133,7 @@ public class Day13 {
 				}
 			}
 		}
-		System.out.println("Result part 2 : " + (verticalReflectionCount + 100 * horizontalReflectionCount));
+		System.out.println("Result part 2 : " + (verticalReflectionCount + 100 * horizontalReflectionCount) + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 	}
 }
 
