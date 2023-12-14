@@ -44,7 +44,6 @@ public class Day14 {
 			else {
 				index.put(str, i);
 			}
-			load.put(str, computeLoad(width, height, map));
 		}
 		result = computeLoad(width, height, map); 
 		
