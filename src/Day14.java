@@ -31,7 +31,6 @@ public class Day14 {
 		map = createMap(lines);
 		
 		Map<String, Long> index = new HashMap<String, Long>();
-		Map<String, Long> load = new HashMap<String, Long>();
 
 		for (long i=0;i<1000000000;i++) {
 			cycle(width, height, map);
@@ -39,11 +38,8 @@ public class Day14 {
 			if (index.containsKey(str)) {
 				long delta = i - index.get(str);
 				i += delta * ((1000000000-i) / delta);
-				index.put(str, i);
 			}
-			else {
-				index.put(str, i);
-			}
+			index.put(str, i);
 		}
 		result = computeLoad(width, height, map); 
 		
