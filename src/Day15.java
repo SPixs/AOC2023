@@ -53,14 +53,14 @@ public class Day15 {
 		for (String step : split) {
 			int index = Math.max(step.indexOf("-"), step.indexOf("="));
 			String label = step.substring(0, index);
-			int boxIndex = computeHash(label);
+			Box box = boxes[computeHash(label)];
 			char operation = step.charAt(index);
 			if (operation == '=') {
 				int focalLength = Integer.parseInt(step.substring(index+1));
-				boxes[boxIndex].putLens(label, focalLength);
+				box.putLens(label, focalLength);
 			}
 			else {
-				boxes[boxIndex].removeLensWithLabel(label);
+				box.removeLensWithLabel(label);
 			}
 		}
 		result = Arrays.stream(boxes).mapToInt(Box::getFocusingPower).sum();
@@ -71,8 +71,7 @@ public class Day15 {
 		
 		int result = 0;
 		for (char c : string.toCharArray()) {
-			result += (int) c;
-			result = (result * 17) % 256;
+			result = ((result + c) * 17) % 256;
 		}
 		return result;
 	}
