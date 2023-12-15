@@ -2,7 +2,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
@@ -12,7 +15,7 @@ public class Day15 {
 	public static class Box {
 
 		int number = 0;
-		public List<Lens> lenses = new ArrayList<Lens>();
+		public Map<String, Lens> lenses = new LinkedHashMap<String, Lens>();
 		
 		public Box(int number) {
 			this.number = number;
@@ -20,27 +23,19 @@ public class Day15 {
 
 		public int getFocusingPower() {
 			int result = 0;
-			for (int i=0;i<lenses.size();i++) {
-				result += (number+1)*(i+1)*lenses.get(i).focalLength;			
+			int index = 0;
+			for (Lens lens : lenses.values()) {
+				result += (number+1)*(++index)*lens.focalLength;			
 			}
 			return result;
 		}
 
 		public void putLens(Lens lens) {
-			int index = lenses.indexOf(lens);
-			if (index >= 0) {
-				lenses.set(index, lens);
-			}
-			else {
-				lenses.add(lens);
-			}
+			lenses.put(lens.label, lens);
 		}
 
 		public void removeLensWithLabel(String label) {
-			int index = lenses.indexOf(new Lens(label, 0));
-			if (index >= 0) {
-				lenses.remove(index);
-			}
+			lenses.remove(label);
 		}
 	}
 
@@ -80,13 +75,13 @@ public class Day15 {
 		Box[] boxes = new Box[256];
 		for (int i=0;i<256;i++) boxes[i] = new Box(i);
 		
-		for (String string : split) {
-			int index = Math.max(string.indexOf("-"), string.indexOf("="));
-			String label = string.substring(0, index);
+		for (String step : split) {
+			int index = Math.max(step.indexOf("-"), step.indexOf("="));
+			String label = step.substring(0, index);
 			int boxIndex = computeHash(label);
-			char operation = string.charAt(index);
+			char operation = step.charAt(index);
 			if (operation == '=') {
-				int focalLength = Integer.parseInt(string.substring(index+1));
+				int focalLength = Integer.parseInt(step.substring(index+1));
 				Lens lens = new Lens(label, focalLength);
 				boxes[boxIndex].putLens(lens);
 			}
@@ -94,11 +89,8 @@ public class Day15 {
 				boxes[boxIndex].removeLensWithLabel(label);
 			}
 		}
-		result = 0;
-		for (Box box : boxes) {
-			result += box.getFocusingPower();
-		}
-		System.out.println(result);
+		result = Arrays.stream(boxes).mapToInt(Box::getFocusingPower).sum();
+		System.out.println("Result part 2 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 	}
 
 	private static int computeHash(String string) {
