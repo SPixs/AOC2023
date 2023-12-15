@@ -23,12 +23,8 @@ public class Day15 {
 		}
 
 		public int getFocusingPower() {
-			int result = 0;
-			int index = 0;
-			for (int focalLength : lenses.values()) {
-				result += (++index) * focalLength;			
-			}
-			return (number+1) * result;
+			List<Integer> lensesList = new ArrayList<Integer>(lenses.values());
+			return IntStream.range(0, lensesList.size()).map(i -> lensesList.get(i)*(i+1)).sum() * (number+1);
 		}
 
 		public void putLens(String label, int focalLength) { lenses.put(label, focalLength); }
