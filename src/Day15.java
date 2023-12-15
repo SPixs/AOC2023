@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 public class Day15 {
 	
@@ -48,12 +49,6 @@ public class Day15 {
 			this.label = label;
 			this.focalLength = focalLength;
 		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (obj == null || !(obj instanceof Lens)) return false;
-			return Objects.equals(label, ((Lens)obj).label);
-		}
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -63,11 +58,7 @@ public class Day15 {
 		// Part 1
 		long startTime = System.nanoTime();
 		String[] split = lines.get(0).split(",");
-		int result = 0;
-		for (String string : split) {
-			result += computeHash(string);
-		}
-		
+		int result = Arrays.stream(split).mapToInt(Day15::computeHash).sum();
 		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 		
 		// Part 2
@@ -82,8 +73,7 @@ public class Day15 {
 			char operation = step.charAt(index);
 			if (operation == '=') {
 				int focalLength = Integer.parseInt(step.substring(index+1));
-				Lens lens = new Lens(label, focalLength);
-				boxes[boxIndex].putLens(lens);
+				boxes[boxIndex].putLens(new Lens(label, focalLength));
 			}
 			else {
 				boxes[boxIndex].removeLensWithLabel(label);
@@ -94,11 +84,11 @@ public class Day15 {
 	}
 
 	private static int computeHash(String string) {
+		
 		int result = 0;
 		for (char c : string.toCharArray()) {
 			result += (int) c;
-			result *= 17;
-			result = result % 256;
+			result = (result * 17) % 256;
 		}
 		return result;
 	}
