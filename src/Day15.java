@@ -16,7 +16,7 @@ public class Day15 {
 	public static class Box {
 
 		int number = 0;
-		public Map<String, Lens> lenses = new LinkedHashMap<String, Lens>();
+		public Map<String, Integer> lenses = new LinkedHashMap<String, Integer>();
 		
 		public Box(int number) {
 			this.number = number;
@@ -25,30 +25,14 @@ public class Day15 {
 		public int getFocusingPower() {
 			int result = 0;
 			int index = 0;
-			for (Lens lens : lenses.values()) {
-				result += (number+1)*(++index)*lens.focalLength;			
+			for (int focalLength : lenses.values()) {
+				result += (number+1)*(++index)*focalLength;			
 			}
 			return result;
 		}
 
-		public void putLens(Lens lens) {
-			lenses.put(lens.label, lens);
-		}
-
-		public void removeLensWithLabel(String label) {
-			lenses.remove(label);
-		}
-	}
-
-	public static class Lens {
-
-		private String label;
-		public int focalLength;
-
-		public Lens(String label, int focalLength) {
-			this.label = label;
-			this.focalLength = focalLength;
-		}
+		public void putLens(String label, int focalLength) { lenses.put(label, focalLength); }
+		public void removeLensWithLabel(String label) { lenses.remove(label); }
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -73,7 +57,7 @@ public class Day15 {
 			char operation = step.charAt(index);
 			if (operation == '=') {
 				int focalLength = Integer.parseInt(step.substring(index+1));
-				boxes[boxIndex].putLens(new Lens(label, focalLength));
+				boxes[boxIndex].putLens(label, focalLength);
 			}
 			else {
 				boxes[boxIndex].removeLensWithLabel(label);
