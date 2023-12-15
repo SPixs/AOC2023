@@ -35,6 +35,10 @@ public class Day15 {
 		public void removeLensWithLabel(String label) { lenses.remove(label); }
 	}
 
+	private static int computeHash(String string) {
+		return string.chars().reduce(0, (a,b) -> ((a + b) * 17) % 256);
+	}
+
 	public static void main(String[] args) throws IOException {
 
 		List<String> lines = Files.readAllLines(Path.of("input_day15.txt"));
@@ -65,15 +69,6 @@ public class Day15 {
 		}
 		result = Arrays.stream(boxes).mapToInt(Box::getFocusingPower).sum();
 		System.out.println("Result part 2 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
-	}
-
-	private static int computeHash(String string) {
-		
-		int result = 0;
-		for (char c : string.toCharArray()) {
-			result = ((result + c) * 17) % 256;
-		}
-		return result;
 	}
 }
 
