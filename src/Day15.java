@@ -26,9 +26,9 @@ public class Day15 {
 			int result = 0;
 			int index = 0;
 			for (int focalLength : lenses.values()) {
-				result += (number+1)*(++index)*focalLength;			
+				result += (++index) * focalLength;			
 			}
-			return result;
+			return (number+1) * result;
 		}
 
 		public void putLens(String label, int focalLength) { lenses.put(label, focalLength); }
