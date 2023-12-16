@@ -186,7 +186,6 @@ public class Day16 {
 				}
 			}
 		}
-		Thread.yield();
 	}
 
 	private static char[][] createMap(List<String> lines) {
