@@ -6,9 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 public class Day16 {
 	
+	static int width = 0;
+	static int height = 0;
+
 	public static class BeamDirection {
 		public BeamDirection(int dx, int dy) {
 			this.dx = dx;
@@ -39,8 +43,6 @@ public class Day16 {
 				return false;
 			return true;
 		}
-		
-		
 	}
 
 	public static class Energized {
@@ -51,13 +53,9 @@ public class Day16 {
 		}
 
 		public boolean contains(BeamDirection direction) {
-			// TODO Auto-generated method stub
 			return directions.contains(direction);
 		}
 	}
-
-	static int width = 0;
-	static int height = 0;
 
 	private static class LightSource {
 		
@@ -121,48 +119,36 @@ public class Day16 {
 		height = lines.size();
 		
 		char[][] map = createMap(lines);
-		Energized[][] energizedMap = new Energized[width][height];
-		for (int x=0;x<width;x++) {
-			for (int y=0;y<height;y++) {
-				energizedMap[x][y] = new Energized();
-			}
-		}
-		
-		int result = 0;
 		LightSource source = new LightSource(-1, 0, 1, 0);
-		processLight(source, map, energizedMap);
-		for (int x=0;x<width;x++) {
-			for (int y=0;y<height;y++) {
-				if (!energizedMap[x][y].directions.isEmpty()) {
-					result++;
-				}
-			}
-		}
-		
+		int result = countEnergized(source, map);
 		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 		
 		// Part 2
 		startTime = System.nanoTime();
-		
 		result = 0;
-		for (int x=0;x<width;x++) {
-			source = new LightSource(x, -1, 0, 1);
-			result = Math.max(result, countEnergized(source, map, energizedMap));
-			source = new LightSource(x, height, 0, -1);
-			result = Math.max(result, countEnergized(source, map, energizedMap));
-		}
-		for (int y=0;y<height;y++) {
-			source = new LightSource(-1, y, 1, 0);
-			result = Math.max(result, countEnergized(source, map, energizedMap));
-			source = new LightSource(width, y, -1, 0);
-			result = Math.max(result, countEnergized(source, map, energizedMap));
-		}
+
+		result = Math.max(result, IntStream.range(0, width).parallel().map(x -> {
+			LightSource src = new LightSource(x, -1, 0, 1);
+			int count = countEnergized(src, map);
+			src = new LightSource(x, height, 0, 1);
+			count = Math.max(count, countEnergized(src, map));
+			return count;
+		}).max().orElseThrow());
+
+		result = Math.max(result, IntStream.range(0, height).parallel().map(y -> {
+			LightSource src = new LightSource(-1, y, 1, 0);
+			int count = countEnergized(src, map);
+			src = new LightSource(width, y, -1, 0);
+			count = Math.max(count, countEnergized(src, map));
+			return count;
+		}).max().orElseThrow());
 			
 		System.out.println("Result part 2 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 	}
 	
-	private static int countEnergized(LightSource source, char[][] map, Energized[][] energizedMap) {
+	private static int countEnergized(LightSource source, char[][] map) {
 		int result = 0;
+		Energized[][] energizedMap = new Energized[width][height];
 		for (int x=0;x<width;x++) {
 			for (int y=0;y<height;y++) {
 				energizedMap[x][y] = new Energized();
