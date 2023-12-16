@@ -74,33 +74,37 @@ public class Day16 {
 		public List<LightSource> getReflected(char c) {
 			List<LightSource> result = new ArrayList<LightSource>();
 			if (dx == 0 && dy != 0) {
-				if (c == '-') {
-					result.add(new LightSource(x,y,-1,0));
-					result.add(new LightSource(x,y,1,0));
-				}
-				if (c == '/') {
-					result.add(new LightSource(x,y,-dy,0));
-				}
-				if (c == '\\') {
-					result.add(new LightSource(x,y,dy,0));
-				}
-				if (c == '|') {
-					result.add(new LightSource(x,y,dx, dy));
+				switch (c) {
+					case '-':
+						result.add(new LightSource(x,y,-1,0));
+						result.add(new LightSource(x,y,1,0));
+						break;
+					case '/':
+						result.add(new LightSource(x,y,-dy,0));
+						break;
+					case '\\':
+						result.add(new LightSource(x,y,dy,0));
+						break;
+					case '|':
+						result.add(new LightSource(x,y,dx, dy));
+						break;
 				}
 			}
 			else if (dx != 0 && dy == 0) {
-				if (c == '|') {
-					result.add(new LightSource(x,y,0,-1));
-					result.add(new LightSource(x,y,0,1));
-				}
-				if (c == '/') {
-					result.add(new LightSource(x,y,0,-dx));
-				}
-				if (c == '\\') {
-					result.add(new LightSource(x,y,0,dx));
-				}
-				if (c == '-') {
-					result.add(new LightSource(x,y,dx, dy));
+				switch (c) {
+					case '|':
+						result.add(new LightSource(x,y,0,-1));
+						result.add(new LightSource(x,y,0,1));
+						break;
+					case '/':
+						result.add(new LightSource(x,y,0,-dx));
+						break;
+					case '\\':
+						result.add(new LightSource(x,y,0,dx));
+						break;
+					case '-':
+						result.add(new LightSource(x,y,dx, dy));
+						break;
 				}
 			}
 			else 
@@ -128,18 +132,14 @@ public class Day16 {
 		result = 0;
 
 		result = Math.max(result, IntStream.range(0, width).parallel().map(x -> {
-			LightSource src = new LightSource(x, -1, 0, 1);
-			int count = countEnergized(src, map);
-			src = new LightSource(x, height, 0, 1);
-			count = Math.max(count, countEnergized(src, map));
+			int count = countEnergized(new LightSource(x, -1, 0, 1), map);
+			count = Math.max(count, countEnergized(new LightSource(x, height, 0, 1), map));
 			return count;
 		}).max().orElseThrow());
 
 		result = Math.max(result, IntStream.range(0, height).parallel().map(y -> {
-			LightSource src = new LightSource(-1, y, 1, 0);
-			int count = countEnergized(src, map);
-			src = new LightSource(width, y, -1, 0);
-			count = Math.max(count, countEnergized(src, map));
+			int count = countEnergized(new LightSource(-1, y, 1, 0), map);
+			count = Math.max(count, countEnergized(new LightSource(width, y, -1, 0), map));
 			return count;
 		}).max().orElseThrow());
 			
