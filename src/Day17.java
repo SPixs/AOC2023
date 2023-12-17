@@ -2,8 +2,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +75,7 @@ public class Day17 {
 		result = Integer.MAX_VALUE;
 		allPathFromSource = calculateShortestPathFromSource(start, true);
 		for (Node node : allPathFromSource) {
-			if (node.x == width-1 && node.y == height-1 && node.steps >= 3) {
+			if (node.x == width-1 && node.y == height-1 && node.steps > 3) {
 				result = Math.min(result, node.distance);
 			}
 		}
@@ -141,19 +141,20 @@ public class Day17 {
 				 }
 			}
 			else {
-				neighbors.add(direction.getNext(this));
-				if (!part2 || steps >=3) { 
+				 if (steps < (part2 ? 10 : 3)) 
+					 neighbors.add(direction.getNext(this));
+				if (!part2 || steps > 3) { 
 					Node rightNode = direction.getRight().getNext(this);
-					rightNode.steps = 0;
+					rightNode.steps = 1;
 					neighbors.add(rightNode);
 	
 					Node leftNode = direction.getLeft().getNext(this);
-					leftNode.steps = 0;
+					leftNode.steps = 1;
 					neighbors.add(leftNode);
 				}
 			}
 			
-			neighbors = neighbors.stream().filter(n -> isValid(n.x, n.y) && n.steps < (part2 ? 10 : 3)).collect(Collectors.toList());
+			neighbors = neighbors.stream().filter(n -> isValid(n.x, n.y)).collect(Collectors.toList());
 			return neighbors;
 		}
 		
@@ -169,10 +170,9 @@ public class Day17 {
 	
 	// ========================================= Dijkstra ================================	
 
-	public static Set<Node> calculateShortestPathFromSource(Node source, boolean part2) {
+	public final static Set<Node> calculateShortestPathFromSource(Node source, boolean part2) {
 	    
 		source.distance = 0;
-		source.steps = -1;
 		
 	    Set<Node> settledNodes = new HashSet<>();
 	    Set<Node> unsettledNodes = new HashSet<>();
@@ -180,12 +180,26 @@ public class Day17 {
 	    unsettledNodes.add(source);
 	    
 	    while (unsettledNodes.size() != 0) {
+	    	
 	        Node currentNode = getLowestDistanceNode(unsettledNodes);
 	        
 	        unsettledNodes.remove(currentNode);
 	        for (Node adjacentNode : currentNode.computeAdjacent(part2)) {
-	            Integer edgeWeight = adjacentNode.heatLoss;
-	            if (!settledNodes.contains(adjacentNode)) {
+	        	
+	        	boolean findLower = false;
+	        	if (!part2) {
+	        		for (int i=1;i<=adjacentNode.steps && !findLower;i++) {
+	        			findLower |= settledNodes.contains(new Node(adjacentNode.x, adjacentNode.y, adjacentNode.direction, i));
+	        		}
+	        	}
+	        	else {
+	        		for (int i=Math.min(4, adjacentNode.steps);i<=adjacentNode.steps && !findLower;i++) {
+	        			findLower |= settledNodes.contains(new Node(adjacentNode.x, adjacentNode.y, adjacentNode.direction, i));
+	        		}
+	        	}
+	        	
+	            if (!findLower) {
+		            Integer edgeWeight = adjacentNode.heatLoss;
 	                calculateMinimumDistance(adjacentNode, edgeWeight, currentNode);
                 	unsettledNodes.add(adjacentNode);
 	            }
@@ -196,7 +210,7 @@ public class Day17 {
 	    return settledNodes;
 	}
 	
-	private static Node getLowestDistanceNode(Set<Node> unsettledNodes) {
+	private final static Node getLowestDistanceNode(Set<Node> unsettledNodes) {
 		Node lowestDistanceNode = null;
 	    int lowestDistance = Integer.MAX_VALUE;
 	    for (Node node: unsettledNodes) {
@@ -209,7 +223,7 @@ public class Day17 {
 	    return lowestDistanceNode;
 	}
 	
-	public static void calculateMinimumDistance(Node evaluationNode,  Integer edgeWeight, Node sourceNode) {
+	public final static void calculateMinimumDistance(Node evaluationNode,  Integer edgeWeight, Node sourceNode) {
 	    Integer sourceDistance = sourceNode.distance;
 	    if (sourceDistance + edgeWeight < evaluationNode.distance) {
 	        evaluationNode.distance = sourceDistance + edgeWeight;
