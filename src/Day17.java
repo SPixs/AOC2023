@@ -2,11 +2,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -65,8 +63,6 @@ public class Day17 {
 		Set<Node> allPathFromSource = calculateShortestPathFromSource(start, false);
 		for (Node node : allPathFromSource) {
 			if (node.x == width-1 && node.y == height-1) {
-				List<Node> shortestPath = node.shortestPath;
-				shortestPath.remove(0);
 				result = Math.min(result, node.distance);
 			}
 		}
@@ -80,8 +76,6 @@ public class Day17 {
 		allPathFromSource = calculateShortestPathFromSource(start, true);
 		for (Node node : allPathFromSource) {
 			if (node.x == width-1 && node.y == height-1 && node.steps >= 3) {
-				List<Node> shortestPath = node.shortestPath;
-				shortestPath.remove(0);
 				result = Math.min(result, node.distance);
 			}
 		}
@@ -97,7 +91,7 @@ public class Day17 {
 
 		
 		public Integer distance = Integer.MAX_VALUE;
-		public List<Node> shortestPath = new LinkedList<>();
+//		public List<Node> shortestPath = new LinkedList<>();
 		
 		public Node(int x, int y, Direction direction, int step) {
 			this.x = x;
@@ -203,18 +197,25 @@ public class Day17 {
 	}
 	
 	private static Node getLowestDistanceNode(Set<Node> unsettledNodes) {
-		return unsettledNodes.stream().min((n1, n2) -> {
-			return Integer.compare(n1.distance, n2.distance);
-		}).orElse(null);
+		Node lowestDistanceNode = null;
+	    int lowestDistance = Integer.MAX_VALUE;
+	    for (Node node: unsettledNodes) {
+	        int nodeDistance = node.distance;
+	        if (nodeDistance < lowestDistance) {
+	            lowestDistance = nodeDistance;
+	            lowestDistanceNode = node;
+	        }
+	    }
+	    return lowestDistanceNode;
 	}
 	
-	public static void calculateMinimumDistance(Node evaluationNode,  Integer edgeWeigh, Node sourceNode) {
+	public static void calculateMinimumDistance(Node evaluationNode,  Integer edgeWeight, Node sourceNode) {
 	    Integer sourceDistance = sourceNode.distance;
-	    if (sourceDistance + edgeWeigh < evaluationNode.distance) {
-	        evaluationNode.distance = sourceDistance + edgeWeigh;
-	        LinkedList<Node> shortestPath = new LinkedList<>(sourceNode.shortestPath);
-	        shortestPath.add(sourceNode);
-	        evaluationNode.shortestPath = shortestPath;
+	    if (sourceDistance + edgeWeight < evaluationNode.distance) {
+	        evaluationNode.distance = sourceDistance + edgeWeight;
+//	        LinkedList<Node> shortestPath = new LinkedList<>(sourceNode.shortestPath);
+//	        shortestPath.add(sourceNode);
+//	        evaluationNode.shortestPath = shortestPath;
 	    }
 	}
 }
