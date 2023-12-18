@@ -26,7 +26,7 @@ public class Day18 {
 			String[] split = line.split(" ");
 			char direction = split[0].charAt(0);
 			int count = Integer.parseInt(split[1]);
-			String color = split[2].substring(2, 8);
+			String color = split[2].substring(2, 8); // not used
 
 			switch (direction) {
 				case 'U': y -= count; break;
@@ -42,7 +42,11 @@ public class Day18 {
 		 
 		// Part 1
 		long startTime = System.nanoTime();
+		
+		// Use Pick's Theorem :
+		// Number of internal points = Area (from Shoelace) + (integer boundary points // 2) - 1
 		long result = calculatePolygonArea(points) + (perimeter / 2) + 1;
+		
 		System.out.println("Result part 1 : " + result + " in "
 				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 
@@ -73,6 +77,8 @@ public class Day18 {
 		 }
 		
 		startTime = System.nanoTime();
+		// Use Pick's Theorem :
+		// Number of internal points = Area (from Shoelace) + (integer boundary points // 2) - 1
 		BigInteger bigResult = calculatePolygonAreaBig(points); 
 		bigPerimeter = bigPerimeter.divide(BigInteger.TWO);
 		bigResult = bigResult.add(bigPerimeter).add(BigInteger.ONE);
@@ -116,48 +122,6 @@ public class Day18 {
 		public Point(int x, int y) {
 			this.x = x;
 			this.y = y;
-		}
-
-		public void setY(int y) {
-			this.y = y;
-		}
-
-		public void setX(int x) {
-			this.x = x;
-		}
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + (int) (x ^ (x >>> 32));
-			result = prime * result + (int) (y ^ (y >>> 32));
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Point other = (Point) obj;
-			if (x != other.x)
-				return false;
-			if (y != other.y)
-				return false;
-			return true;
 		}
 	}
 }
