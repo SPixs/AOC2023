@@ -21,6 +21,10 @@ public class Day18 {
 		List<Point> points = new ArrayList<>();
 		points.add(new Point(0, 0));
 
+		List<Point> pointsPart2 = new ArrayList<>();
+		pointsPart2.add(new Point(0, 0));
+
+		
 		int perimeter = 0;
 		for (String line : lines) {
 			String[] split = line.split(" ");
@@ -43,8 +47,8 @@ public class Day18 {
 		// Part 1
 		long startTime = System.nanoTime();
 		
-		// Use Pick's Theorem :
-		// Number of internal points = Area (from Shoelace) + (integer boundary points // 2) - 1
+		// Use Pick's Theorem : Area = the number of integer coordinates inside the polygon + (number of integer coordinates on the boundary / 2) - 1
+		// Number of internal points = Area (from Shoelace) + perimeter - (Nb points on perimeter / 2) + 1
 		long result = calculatePolygonArea(points) + (perimeter / 2) + 1;
 		
 		System.out.println("Result part 1 : " + result + " in "
@@ -60,8 +64,7 @@ public class Day18 {
 		for (String line : lines) {
 			String[] split = line.split(" ");
 			String hexa = split[2].substring(2, 8);
-			String color = hexa;
-			char direction = new char[] { 'R', 'D', 'L', 'U' }[color.charAt(5)-'0'];
+			char direction = new char[] { 'R', 'D', 'L', 'U' }[hexa.charAt(5)-'0'];
 			int count = Integer.parseInt(hexa.substring(0, 5), 16);
 			
 			switch (direction) {
@@ -77,8 +80,7 @@ public class Day18 {
 		 }
 		
 		startTime = System.nanoTime();
-		// Use Pick's Theorem :
-		// Number of internal points = Area (from Shoelace) + (integer boundary points // 2) - 1
+		// Use Pick's Theorem again
 		BigInteger bigResult = calculatePolygonAreaBig(points); 
 		bigPerimeter = bigPerimeter.divide(BigInteger.TWO);
 		bigResult = bigResult.add(bigPerimeter).add(BigInteger.ONE);
@@ -86,6 +88,9 @@ public class Day18 {
 				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 	}
 	
+	/**
+	 * Shoelace algorithm with integer coordinates
+	 */
 	static long calculatePolygonArea(List<Point> polygon) {
 		int n = polygon.size();
 		long area = 0;
@@ -99,7 +104,10 @@ public class Day18 {
 
 		return Math.abs(area) / 2;
 	}
-
+	
+	/**
+	 * Shoelace algorithm with large integer coordinates
+	 */
 	static BigInteger calculatePolygonAreaBig(List<Point> polygon) {
 		int n = polygon.size();
 		BigInteger area = BigInteger.ZERO;

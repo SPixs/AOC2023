@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -7,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class Day19 {
 
@@ -35,12 +35,15 @@ public class Day19 {
 			return name + "{" + rules + "}";
 		}
 
-		public void visit(Solutions solutions, Map<String, Workflow> worflows, List<Rule> rulesStack) {
+		public void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
 			for (Rule rule : rules) {
-				rule.visit(solutions, worflows, rulesStack);
+				Solutions newCandidates = new Solutions(candidates);
+				rule.retain(newCandidates);
+				rule.visit(newCandidates, worflows, rulesStack, bigResult);
+				candidates = new Solutions(candidates);
+				rule.substract(candidates);
 			}
 		}
-		
 	}
 	
 	public static abstract class Rule {
@@ -48,19 +51,23 @@ public class Day19 {
 		public String nextWorkflow;
 		abstract boolean accept(Part p);
 
-		protected void visit(Solutions solutions, Map<String, Workflow> worflows, List<Rule> rulesStack) {
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
 			rulesStack.add(this);
 			if (nextWorkflow.equals("R")) {
-				solutions.substract(rulesStack);
 			}
-			else if (nextWorkflow.equals("A")) {}
+			else if (nextWorkflow.equals("A")) {
+				bigResult[0] = bigResult[0].add(candidates.getSize());
+			}
 			else {
-				worflows.get(nextWorkflow).visit(solutions, worflows, rulesStack);
+				worflows.get(nextWorkflow).visit(candidates, worflows, rulesStack, bigResult);
 			}
+			
 			rulesStack.remove(this);
 		}
 
 		protected abstract void substract(Solutions solutions);
+
+		protected abstract Solutions retain(Solutions solutions);
 	}
 	
 	public static class GTRule extends Rule {
@@ -89,36 +96,14 @@ public class Day19 {
 		protected void substract(Solutions solutions) {
 			solutions.substractGT(attributeName, value);
 		}
+
+		@Override
+		protected Solutions retain(Solutions solutions) {
+			solutions.retainGT(attributeName, value);
+			return solutions;
+		}
 	}
 	
-	public static class EqualRule extends Rule {
-		
-		public String attributeName;
-		public int value;
-		
-		public EqualRule(String attributeName, int value, String nextWorkflow) {
-				this.attributeName = attributeName;
-				this.value = value;
-				this.nextWorkflow = nextWorkflow;
-		}
-		
-		@Override
-		boolean accept(Part p) {
-			if (!p.attributes.containsKey(attributeName)) return false;
-			return p.attributes.get(attributeName) == value;
-		}
-		
-		@Override
-		public String toString() {
-			return attributeName + "=" + value + ":" + nextWorkflow;
-		}
-
-		@Override
-		protected void substract(Solutions solutions) {
-			solutions.substractEQ(attributeName, value);
-		}
-	}
-
 	public static class LTRule extends Rule {
 		
 		public String attributeName;
@@ -145,9 +130,15 @@ public class Day19 {
 		protected void substract(Solutions solutions) {
 			solutions.substractLT(attributeName, value);
 		}
+		
+		@Override
+		protected Solutions retain(Day19.Solutions solutions) {
+			solutions.retainLT(attributeName, value);
+			return solutions;
+		}
 	}
 
-	public static class AcceptTRule extends Rule {
+	public static class AcceptRule extends Rule {
 		
 		@Override
 		boolean accept(Part p) {
@@ -159,15 +150,21 @@ public class Day19 {
 			return "A";
 		}
 		
-		protected void visit(Solutions solutions, Map<String, Workflow> worflows, List<Rule> rulesStack) {
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
+			bigResult[0] = bigResult[0].add(candidates.getSize());
 		}
 
 		@Override
 		protected void substract(Solutions solutions) {
 		}
+
+		@Override
+		protected Solutions retain(Solutions solutions) {
+			return solutions;
+		}
 	}
 
-	public static class RejectTRule extends Rule {
+	public static class RejectRule extends Rule {
 	
 		@Override
 		boolean accept(Part p) {
@@ -179,14 +176,16 @@ public class Day19 {
 			return "R";
 		}
 		
-		protected void visit(Solutions solutions, Map<String, Workflow> worflows, List<Rule> rulesStack) {
-			rulesStack.add(this);
-			solutions.substract(rulesStack);
-			rulesStack.remove(this);
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
 		}
 
 		@Override
 		protected void substract(Solutions solutions) {
+		}
+
+		@Override
+		protected Solutions retain(Solutions solutions) {
+			return solutions;
 		}
 	}
 	
@@ -209,6 +208,11 @@ public class Day19 {
 		@Override
 		protected void substract(Solutions solutions) {
 		}
+		
+		@Override
+		protected Solutions retain(Solutions solutions) {
+			return solutions;
+		}
 	}
 	
 	public static boolean accept(Part part, Map<String, Workflow> worflows) {
@@ -216,8 +220,6 @@ public class Day19 {
 		return acceptWorkflow(part, worflows, worflows.get("in"));
 	}
 	
-	
-
 	private static boolean acceptWorkflow(Part part, Map<String, Workflow> worflows, Workflow workflow) {
 
 		boolean accept = false;
@@ -235,7 +237,7 @@ public class Day19 {
 					}
 				}
 				else {
-					return rule instanceof AcceptTRule;
+					return rule instanceof AcceptRule;
 				}
 			}
 		}
@@ -260,11 +262,7 @@ public class Day19 {
 				String[] splitRules = rulesPart.split(",");
 				List<Rule> rules = new ArrayList<Day19.Rule>();
 				for (String rule : splitRules) {
-					if (rule.contains("=")) {
-						Rule r = new EqualRule(rule.split("=")[0], Integer.parseInt(rule.split("=")[1].split(":")[0]), rule.split("=")[1].split(":")[1]);
-						rules.add(r);
-					}
-					else if (rule.contains("<")) {
+					if (rule.contains("<")) {
 						Rule r = new LTRule(rule.split("<")[0], Integer.parseInt(rule.split("<")[1].split(":")[0]), rule.split("<")[1].split(":")[1]);
 						rules.add(r);
 					}
@@ -273,10 +271,10 @@ public class Day19 {
 						rules.add(r);
 					}
 					else if (rule.contains("A")) {
-						rules.add(new AcceptTRule());
+						rules.add(new AcceptRule());
 					}
 					else if (rule.contains("R")) {
-						rules.add(new RejectTRule());
+						rules.add(new RejectRule());
 					}
 					else {
 						rules.add(new GotoRule(rule));
@@ -297,69 +295,83 @@ public class Day19 {
 			}
 		}
 		
+		long startTime = System.nanoTime();
 		int result = 0;
 		for (Part part : parts) {
 			if (accept(part, worflows)) {
 				result += part.getSum();
 			}
 		}
-		
-		long startTime = System.nanoTime();
 
-		System.out.println("Result part 1 : " + result + " in "
-				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 
 		// Part 2
-		
-		Solutions solutions = new Solutions();
-		worflows.get("in").visit(solutions, worflows, new ArrayList<Rule>());
-		
-		for (Range r : solutions.ranges.values()) {
-			System.out.println(r.values.size());
-		}
-		
-		result = 0;
 		startTime = System.nanoTime();
-		System.out.println("Result part 2 : " + result + " in "
-				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		BigInteger[] bigResult = new BigInteger[] { BigInteger.ZERO };
+		Solutions candidates = new Solutions();
+		worflows.get("in").visit(candidates, worflows, new ArrayList<Rule>(), bigResult);
+		
+//		Result part 1 : 391132 in 17ms
+//		Result part 2 : 128163929109524 in 1684ms
+		System.out.println("Result part 2 : " + bigResult[0] + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 	}
 	
 	public static class Range {
 		
-		public List<Integer> values = new ArrayList<Integer>();
+		private int min;
+		private int max;
 		
 		public Range() {
-			for (int i=1;i<=4000;i++) {
-				values.add(i);
-			}
+			min = 1;
+			max = 4000;
 		}
 
-//		public Range(Range range) {
-//			this.start = range.start;
-//			this.end = range.end;
-//		}
+		public Range(int min, int max) {
+			this.min = min;
+			this.max = max;
+		}
 
 		public void substractLT(int value) {
-			values = values.stream().filter(v -> v >= value).collect(Collectors.toList());
-			Thread.yield();
-		}
-
-		public void substractEQ(int value) {
-			values = values.stream().filter(v -> v != value).collect(Collectors.toList());
-			Thread.yield();
+			min = Math.max(min, value);
 		}
 
 		public void substractGT(int value) {
-			values = values.stream().filter(v -> v <= value).collect(Collectors.toList());
-			Thread.yield();
+			max = Math.min(max, value);
+		}
+
+		public void retainGT(int value) {
+			min = Math.max(min, value + 1);
+		}
+
+		public void retainLT(int value) {
+			max = Math.min(max, value - 1);
+		}
+
+		public static Range empty() {
+			Range range = new Range();
+			range.min = 0;
+			range.max = -1;
+			return range;
 		}
 		
+		@Override
+		public String toString() {
+			return "["+min+","+max+"]";
+		}
+
+		public Range copy() {
+			return new Range(min, max);
+		}
+
+		public int size() {
+			return Math.max(0, max-min+1);
+		}
 	}
 	
 	public static class Solutions {
 		
 		private Map<String, Range> ranges = new HashMap<String, Range>();
-		
+
 		public Solutions() {
 			ranges.put("x", new Range());
 			ranges.put("m", new Range());
@@ -367,35 +379,42 @@ public class Day19 {
 			ranges.put("s", new Range());
 		}
 		
-		public void substractLT(String attributeName, int value) {
-			ranges.get(attributeName).substractLT(value);
+		public Solutions(Solutions solutions) {
+			ranges.put("x", solutions.ranges.get("x").copy());
+			ranges.put("m", solutions.ranges.get("m").copy());
+			ranges.put("a", solutions.ranges.get("a").copy());
+			ranges.put("s", solutions.ranges.get("s").copy());
+		}
+		
+		public BigInteger getSize() {
+			BigInteger result = BigInteger.ONE;
+			for (Range r : ranges.values()) {
+				result = result.multiply(BigInteger.valueOf(r.size()));
+			}
+			return result;
+ 		}
+
+		public void retainGT(String attributeName, int value) {
+			ranges.get(attributeName).retainGT(value);
 		}
 
-		public void substractEQ(String attributeName, int value) {
-			ranges.get(attributeName).substractEQ(value);
+
+		public void retainLT(String attributeName, int value) {
+			ranges.get(attributeName).retainLT(value);
+		}
+
+
+		public void substractLT(String attributeName, int value) {
+			ranges.get(attributeName).substractLT(value);
 		}
 
 		public void substractGT(String attributeName, int value) {
 			ranges.get(attributeName).substractGT(value);
 		}
-
-		public void substract(List<Rule> rulesStack) {
-			for (Rule rule : rulesStack) {
-				rule.substract(this);
-			}
+		
+		@Override
+		public String toString() {
+			return "x="+ranges.get("x")+","+"m="+ranges.get("m")+","+"a="+ranges.get("a")+","+"s="+ranges.get("s");
 		}
-
-//		public Solutions(Solutions other) {
-//			for (String attribute : ranges.keySet()) {
-//				ranges.put(attribute, new Range(ranges.get(attribute)));
-//			}
-//		}
-		
-//		public void substract(Solutions s) {
-//			for (String attribute : ranges.keySet()) {
-//				ranges.put(attribute, ranges.get(attribute).substract(s.ranges.get(attribute)));
-//			}
-//		}
-		
 	}
 }

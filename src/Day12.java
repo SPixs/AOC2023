@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Day12 {
@@ -15,21 +16,22 @@ public class Day12 {
 		List<String> lines = Files.readAllLines(Path.of("input_day12.txt"));
 
 		// Part 1
-		BigInteger result = BigInteger.ZERO;
-		for (String line : lines) {
-			char[] springs = line.split(" ")[0].toCharArray();
-			int[] damagedGroups = Arrays.stream(line.split(" ")[1].split(",")).mapToInt(Integer::parseInt).toArray();
-			result = result.add(countArrangement(springs, damagedGroups)); 
-		}
-		
+		BigInteger result = lines.parallelStream().map(line -> countArrangementsPart1(line)).reduce(BigInteger.ZERO, (a,b) -> BigInteger.ZERO.add(a).add(b));
 		System.out.println("Result part 1 : " + result);
 		
 		// Part 2
-		result = lines.parallelStream().map(line -> countArrangements(line)).reduce(BigInteger.ZERO, (a,b) -> BigInteger.ZERO.add(a).add(b));
-		System.out.println("Result part 2 : " + result);
+		long startTime = System.nanoTime();
+		result = lines.parallelStream().map(line -> countArrangementsPart2(line)).reduce(BigInteger.ZERO, (a,b) -> BigInteger.ZERO.add(a).add(b));
+		System.out.println("Result part 2 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-startTime))+"ms");
 	}
 	
-	private static BigInteger countArrangements(String line) {
+	private static BigInteger countArrangementsPart1(String line) {
+		char[] springs = line.split(" ")[0].toCharArray();
+		int[] damagedGroups = Arrays.stream(line.split(" ")[1].split(",")).mapToInt(Integer::parseInt).toArray();
+		return countArrangement(springs, damagedGroups);
+	}
+	
+	private static BigInteger countArrangementsPart2(String line) {
 		char[] springs = line.split(" ")[0].toCharArray();
 		// 5 copies
 		char[] extendedSprings = new char[4+springs.length*5];
