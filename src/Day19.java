@@ -35,13 +35,13 @@ public class Day19 {
 			return name + "{" + rules + "}";
 		}
 
-		public void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
+		public void visit(Solutions candidates, Map<String, Workflow> worflows, BigInteger[] bigResult) {
 			for (Rule rule : rules) {
 				Solutions newCandidates = new Solutions(candidates);
-				rule.retain(newCandidates);
-				rule.visit(newCandidates, worflows, rulesStack, bigResult);
-				candidates = new Solutions(candidates);
-				rule.substract(candidates);
+				rule.retain(candidates);
+				rule.visit(candidates, worflows, bigResult);
+				rule.substract(newCandidates);
+				candidates = newCandidates;
 			}
 		}
 	}
@@ -51,18 +51,15 @@ public class Day19 {
 		public String nextWorkflow;
 		abstract boolean accept(Part p);
 
-		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
-			rulesStack.add(this);
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, BigInteger[] bigResult) {
 			if (nextWorkflow.equals("R")) {
 			}
 			else if (nextWorkflow.equals("A")) {
 				bigResult[0] = bigResult[0].add(candidates.getSize());
 			}
 			else {
-				worflows.get(nextWorkflow).visit(candidates, worflows, rulesStack, bigResult);
+				worflows.get(nextWorkflow).visit(candidates, worflows, bigResult);
 			}
-			
-			rulesStack.remove(this);
 		}
 
 		protected abstract void substract(Solutions solutions);
@@ -150,7 +147,7 @@ public class Day19 {
 			return "A";
 		}
 		
-		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, BigInteger[] bigResult) {
 			bigResult[0] = bigResult[0].add(candidates.getSize());
 		}
 
@@ -176,7 +173,7 @@ public class Day19 {
 			return "R";
 		}
 		
-		protected void visit(Solutions candidates, Map<String, Workflow> worflows, List<Rule> rulesStack, BigInteger[] bigResult) {
+		protected void visit(Solutions candidates, Map<String, Workflow> worflows, BigInteger[] bigResult) {
 		}
 
 		@Override
@@ -303,20 +300,18 @@ public class Day19 {
 			}
 		}
 
-		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMicros((System.nanoTime() - startTime)) / 1000.d + "ms");
 
 		// Part 2
 		startTime = System.nanoTime();
 		BigInteger[] bigResult = new BigInteger[] { BigInteger.ZERO };
 		Solutions candidates = new Solutions();
-		worflows.get("in").visit(candidates, worflows, new ArrayList<Rule>(), bigResult);
+		worflows.get("in").visit(candidates, worflows, bigResult);
 		
-//		Result part 1 : 391132 in 17ms
-//		Result part 2 : 128163929109524 in 1684ms
-		System.out.println("Result part 2 : " + bigResult[0] + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		System.out.println("Result part 2 : " + bigResult[0] + " in " + TimeUnit.NANOSECONDS.toMicros((System.nanoTime() - startTime))  / 1000.d + "ms");
 	}
 	
-	public static class Range {
+	public static final class Range {
 		
 		private int min;
 		private int max;
@@ -368,9 +363,9 @@ public class Day19 {
 		}
 	}
 	
-	public static class Solutions {
+	public static final class Solutions {
 		
-		private Map<String, Range> ranges = new HashMap<String, Range>();
+		private final Map<String, Range> ranges = new HashMap<String, Range>();
 
 		public Solutions() {
 			ranges.put("x", new Range());
