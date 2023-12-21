@@ -42,11 +42,10 @@ public class Day21 {
 		
 		Set<Point> toExplore = new HashSet<Point>(Collections.singleton(startPosition));
 
-		
 		// Part 1
 		long startTime = System.nanoTime();
 
-		for (int i = 0; i < 64; i++) {
+		for (int i=0;i<64;i++) {
 			toExplore = toExplore.stream().flatMap(p -> Stream.of(p.getDown(), p.getLeft(), p.getUp(), p.getRight())).filter(p -> isValid(map, p)).collect(Collectors.toSet());
         }
 		long result = toExplore.size();
