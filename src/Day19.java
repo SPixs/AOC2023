@@ -18,10 +18,9 @@ public class Day19 {
 		public int getSum() {
 			return attributes.values().stream().mapToInt(v -> v).sum();
 		}
-		
 	}
 	
-	public static class Workflow {
+	public static final class Workflow {
 		
 		public String name;
 		public List<Rule> rules = new ArrayList<Day19.Rule>();
@@ -38,8 +37,7 @@ public class Day19 {
 		public void visit(Solutions candidates, Map<String, Workflow> worflows, BigInteger[] bigResult) {
 			for (Rule rule : rules) {
 				Solutions newCandidates = new Solutions(candidates);
-				rule.retain(candidates);
-				rule.visit(candidates, worflows, bigResult);
+				rule.visit(rule.retain(candidates), worflows, bigResult);
 				rule.substract(newCandidates);
 				candidates = newCandidates;
 			}
