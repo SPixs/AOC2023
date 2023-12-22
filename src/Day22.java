@@ -193,6 +193,18 @@ public class Day22 {
 			int minZ = Math.min(start.z, end.z);
 			return (minZ == 1);
 		}
+
+		public void recurseRestore() {
+			for (Brick parent : upperBricks) {
+				if (parent.lowerBricks.isEmpty()) {
+					parent.lowerBricks.add(this);
+					parent.recurseRestore();
+				}
+				else {
+					parent.lowerBricks.add(this);
+				}
+			}
+		}
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -248,11 +260,14 @@ public class Day22 {
 		startTime = System.nanoTime();
 		result = 0;
 		
+		Set<Brick> removed = new HashSet<Brick>();
+		Set<Brick> processed = new HashSet<Brick>();
 		for (Brick b : bricks) {
-			Set<Brick> removed = new HashSet<Brick>();
-			Set<Brick> processed = new HashSet<Brick>();
+			removed.clear();
+			processed.clear();
 			b.recurseRemove(removed, processed);
-			for (Brick brick : processed) { brick.resetDependencies(); }
+			b.recurseRestore();
+//			for (Brick brick : processed) { brick.resetDependencies(); }
 			result += removed.size();
 		}
 		
