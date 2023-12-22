@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Day22 {
@@ -173,16 +174,18 @@ public class Day22 {
 			return name;
 		}
 
-		public void recurseRemove() {
+		public void recurseRemove(Set<Brick> removed, Set<Brick> processed) {
 			for (Brick parent : upperBricks) {
-				parent.recurseRemove(this);
+				parent.recurseRemove(this, removed, processed);
 			}
 		}
 
-		private void recurseRemove(Brick brick) {
+		private void recurseRemove(Brick brick, Set<Brick> removed, Set<Brick> processed) {
 			lowerBricks.remove(brick);
+			processed.add(this);
 			if (lowerBricks.isEmpty()) {
-				recurseRemove();
+				removed.add(this);
+				recurseRemove(removed, processed);
 			}
 		}
 
@@ -214,28 +217,29 @@ public class Day22 {
 		
 		// Part 1
 		long startTime = System.nanoTime();
-
-		// Compute initla fall so that all bricks have settled
+		
+		// Compute initial fall so that all bricks have settled
 		List<Brick> candidates = grid.getAllFallCandidate(bricks);
 		while (!candidates.isEmpty()) {
 			candidates.forEach(c -> grid.doFall(c));
 			candidates = grid.getAllFallCandidate(bricks);
 		}
+		System.out.println("Part 1a in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 		
+		// Build dependencies between grid
+		Map<Point,Brick> brickMap = Grid.getBrickMap(bricks);
+		for (Brick brick : bricks) { brick.buildDependencies(brickMap); }
+
 		int result = 0;
 
 		for (Brick brick : new ArrayList<Brick>(bricks)) {
-			List<Point> blocks = brick.getBlocks();
-			// Do remove brick
-			grid.remove(blocks);
-			bricks.remove(brick);
-			if (grid.getFallCandidate(bricks) != null) {
+			
+			Set<Brick> upper = brick.upperBricks;
+			upper.forEach(parent -> parent.lowerBricks.remove(brick)); 
+			if (upper.stream().allMatch(p -> !p.lowerBricks.isEmpty())) {
 				result++;
 			}
-			// Undo brick remove
-			bricks.add(brick);
-			grid.add(blocks);
-//			grid.check(bricks);
+			upper.forEach(parent -> parent.resetDependencies());
 		}
 		
 		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
@@ -243,18 +247,16 @@ public class Day22 {
 		// Part 2
 		startTime = System.nanoTime();
 		result = 0;
-		Map<Point,Brick> brickMap = Grid.getBrickMap(bricks);
-		for (Brick brick : bricks) { brick.buildDependencies(brickMap); }
+		
 		for (Brick b : bricks) {
-			for (Brick brick : bricks) { brick.resetDependencies(); }
-			b.recurseRemove();
-			int count = (int) bricks.stream().filter(brick -> !brick.isOnGround() && brick.lowerBricks.isEmpty()).count();
-			result += count;
+			Set<Brick> removed = new HashSet<Brick>();
+			Set<Brick> processed = new HashSet<Brick>();
+			b.recurseRemove(removed, processed);
+			for (Brick brick : processed) { brick.resetDependencies(); }
+			result += removed.size();
 		}
 		
-		// 98167
-		System.out.println("Result part 2 : " + result + " in "
-				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		System.out.println("Result part 2 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 	}
 
 	private static class Point {
