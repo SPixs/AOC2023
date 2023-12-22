@@ -247,9 +247,6 @@ public class Day22 {
 				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 	}
 
-	
-	
-
 	private static class Point {
 
 		public int x, y, z;
