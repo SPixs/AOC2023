@@ -2,8 +2,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -69,9 +72,23 @@ public class Day22 {
 				}
 			}
 		}
+		
+		public static Map<Point, Brick> getBrickMap(Collection<Brick> bricks) {
+			Map<Point, Brick> map = new HashMap<Point, Brick>();
+			for (Brick b : bricks) {
+				List<Day22.Point> blocks = b.getBlocks();
+				for (Point p : blocks) {
+					map.put(p, b);
+				}
+			}
+			return map;
+		}
 	}
 
 	private static class Brick {
+		
+		public Set<Brick> lowerBricks = new HashSet<Brick>();
+		public Set<Brick> upperBricks = new HashSet<Brick>();
 		
 		public Brick(Point start, Point end) {
 			this.start = start;
@@ -81,6 +98,16 @@ public class Day22 {
 		public Point start, end;
 		private String name;
 
+		public void buildDependencies(Map<Point, Brick> map) {
+			Thread.yield();
+			for (Point p : getBlocks()) {
+				Point key = new Point(p.x, p.y, p.z-1);
+				if (map.containsKey(key) && !(map.get(key) == this)) lowerBricks.add(map.get(key));
+				key = new Point(p.x, p.y, p.z+1);
+				if (map.containsKey(key) && !(map.get(key) == this)) upperBricks.add(map.get(key));
+			}
+		}
+		
 		public List<Point> getBlocks() {
 			List<Point> blocks = new ArrayList<Point>();
 
@@ -109,8 +136,7 @@ public class Day22 {
 		}
 		
 		public boolean canFall(Grid grid) {
-			int minZ = Math.min(start.z, end.z);
-			if (minZ == 1) return false;
+			if (isOnGround()) return false;
 			List<Point> blocks = getBlocks();
 			grid.remove(blocks);
 			for (Point p : blocks) {
@@ -137,6 +163,24 @@ public class Day22 {
 
 		public String getName() {
 			return name;
+		}
+
+		public void recurseRemove() {
+			for (Brick parent : upperBricks) {
+				parent.recurseRemove(this);
+			}
+		}
+
+		private void recurseRemove(Brick brick) {
+			lowerBricks.remove(brick);
+			if (lowerBricks.isEmpty()) {
+				recurseRemove();
+			}
+		}
+
+		public boolean isOnGround() {
+			int minZ = Math.min(start.z, end.z);
+			return (minZ == 1);
 		}
 	}
 	
@@ -190,6 +234,15 @@ public class Day22 {
 		// Part 2
 		startTime = System.nanoTime();
 		result = 0;
+		Map<Point,Brick> brickMap = Grid.getBrickMap(bricks);
+		for (Brick b : bricks) {
+			for (Brick brick : bricks) { brick.buildDependencies(brickMap); }
+			b.recurseRemove();
+			int count = (int) bricks.stream().filter(brick -> !brick.isOnGround() && brick.lowerBricks.isEmpty()).count();
+			result += count;
+		}
+		
+		// 98167
 		System.out.println("Result part 2 : " + result + " in "
 				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 	}
