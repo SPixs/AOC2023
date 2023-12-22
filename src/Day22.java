@@ -87,6 +87,8 @@ public class Day22 {
 
 	private static class Brick {
 		
+		public Set<Brick> savedLowerBricks = new HashSet<Brick>();
+		public Set<Brick> savedUpperBricks = new HashSet<Brick>();
 		public Set<Brick> lowerBricks = new HashSet<Brick>();
 		public Set<Brick> upperBricks = new HashSet<Brick>();
 		
@@ -99,13 +101,19 @@ public class Day22 {
 		private String name;
 
 		public void buildDependencies(Map<Point, Brick> map) {
-			Thread.yield();
 			for (Point p : getBlocks()) {
 				Point key = new Point(p.x, p.y, p.z-1);
 				if (map.containsKey(key) && !(map.get(key) == this)) lowerBricks.add(map.get(key));
 				key = new Point(p.x, p.y, p.z+1);
 				if (map.containsKey(key) && !(map.get(key) == this)) upperBricks.add(map.get(key));
 			}
+			savedLowerBricks.addAll(lowerBricks);
+			savedUpperBricks.addAll(upperBricks);
+		}
+		
+		public void resetDependencies() {
+			lowerBricks.addAll(savedLowerBricks);
+			upperBricks.addAll(savedUpperBricks);
 		}
 		
 		public List<Point> getBlocks() {
@@ -207,36 +215,38 @@ public class Day22 {
 		// Part 1
 		long startTime = System.nanoTime();
 
-		Brick candidate = grid.getFallCandidate(bricks);
-		while (candidate != null) {
-			grid.doFall(candidate);
-			candidate = grid.getFallCandidate(bricks);
+		// Compute initla fall so that all bricks have settled
+		List<Brick> candidates = grid.getAllFallCandidate(bricks);
+		while (!candidates.isEmpty()) {
+			candidates.forEach(c -> grid.doFall(c));
+			candidates = grid.getAllFallCandidate(bricks);
 		}
 		
 		int result = 0;
 
 		for (Brick brick : new ArrayList<Brick>(bricks)) {
 			List<Point> blocks = brick.getBlocks();
+			// Do remove brick
 			grid.remove(blocks);
 			bricks.remove(brick);
-			candidate = grid.getFallCandidate(bricks);
-			if (candidate == null) {
+			if (grid.getFallCandidate(bricks) != null) {
 				result++;
 			}
+			// Undo brick remove
 			bricks.add(brick);
 			grid.add(blocks);
 //			grid.check(bricks);
 		}
 		
-		System.out.println("Result part 1 : " + result + " in "
-				+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
+		System.out.println("Result part 1 : " + result + " in " + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - startTime)) + "ms");
 
 		// Part 2
 		startTime = System.nanoTime();
 		result = 0;
 		Map<Point,Brick> brickMap = Grid.getBrickMap(bricks);
+		for (Brick brick : bricks) { brick.buildDependencies(brickMap); }
 		for (Brick b : bricks) {
-			for (Brick brick : bricks) { brick.buildDependencies(brickMap); }
+			for (Brick brick : bricks) { brick.resetDependencies(); }
 			b.recurseRemove();
 			int count = (int) bricks.stream().filter(brick -> !brick.isOnGround() && brick.lowerBricks.isEmpty()).count();
 			result += count;
