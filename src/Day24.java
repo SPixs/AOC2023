@@ -82,7 +82,7 @@ public class Day24 {
 				t1 = newT1;
 				t2 = newT2;
 				fittingRay = newRay;
-				System.out.println(distance + " " + t1 + " " + t2 + " " + temperature);
+//				System.out.println(distance + " " + t1 + " " + t2 + " " + temperature);
 			}
 			temperature *= 0.999;
 			if (distance.compareTo(BigDecimal.valueOf(1)) < 0) break;
